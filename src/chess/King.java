@@ -12,9 +12,13 @@ public class King extends Piece {
 		int dr = Math.abs(destRow - row);
 		int dc = Math.abs(destCol - col);
 		
+		//Prevent capturing own pieces
+		if (board[destRow][destCol] != null && board[destRow][destCol].isWhite() != isWhite) {
+			return false;
+		}
 		// Normal king move or castling
-		return (dr <= 1 && dc <= 1) || (dr == 0 && dc == 2) 
-				&& (board[destRow][destCol] == null || board[destRow][destCol].isWhite() != isWhite);
+		return (dr <= 1 && dc <= 1) || (dr == 0 && dc == 2); 
+				
 	}
 
 	@Override

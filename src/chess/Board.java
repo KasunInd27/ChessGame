@@ -44,9 +44,16 @@ public class Board {
 
 	public boolean movePiece(int fromRow, int fromCol, int toRow, int toCol) {
 		Piece piece = board[fromRow][fromCol];
+		
+		//Cannot move empty square or wrong team's turn
 		if (piece == null || piece.isWhite() != whiteTurn || !piece.isValidMove(toRow, toCol, board)) {
 			return false;
 		}
+		
+		//Block capturing your own piece (this is the critical fix)
+	    if (board[toRow][toCol] != null && board[toRow][toCol].isWhite() == piece.isWhite()) {
+	        return false;
+	    }
 
 		// Castling logic
 		if (piece instanceof King && Math.abs(toCol - fromCol) == 2 && fromRow == toRow && !piece.hasMoved()) {
@@ -80,11 +87,13 @@ public class Board {
 			}
 		}
 
+		//Perform normal move
 		Piece captured = board[toRow][toCol];
 		board[toRow][toCol] = piece;
 		board[fromRow][fromCol] = null;
 		piece.setPosition(toRow, toCol);
 
+		//Undo move if it results in your king being in check
 		if (isKingInCheck(whiteTurn)) {
 			board[fromRow][fromCol] = piece;
 			board[toRow][toCol] = captured;
@@ -92,7 +101,7 @@ public class Board {
 			return false;
 		}
 
-		// Manual pawn promotion
+		//Handle manual pawn promotion
 		if (piece instanceof Pawn && (toRow == 0 || toRow == 7)) {
 			String[] options = { "Queen", "Rook", "Bishop", "Knight" };
 			String choice = (String) JOptionPane.showInputDialog(null, "Promote pawn to:", "Pawn Promotion",
