@@ -11,8 +11,9 @@ public class King extends Piece {
 	public boolean isValidMove(int destRow, int destCol, Piece[][] board) {
 		int dr = Math.abs(destRow - row);
 		int dc = Math.abs(destCol - col);
-
-		return (dr <= 1 && dc <= 1)
+		
+		// Normal king move or castling
+		return (dr <= 1 && dc <= 1) || (dr == 0 && dc == 2) 
 				&& (board[destRow][destCol] == null || board[destRow][destCol].isWhite() != isWhite);
 	}
 
