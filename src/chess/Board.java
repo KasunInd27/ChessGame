@@ -153,31 +153,44 @@ public class Board {
 	}
 
 	// Checkmate detection
-	public boolean isCheckmate() {
-		for (int row = 0; row < 8; row++) {
-			for (int col = 0; col < 8; col++) {
-				Piece piece = board[row][col];
-				if (piece != null && piece.isWhite() == whiteTurn) {
-					for (int r = 0; r < 8; r++) {
-						for (int c = 0; c < 8; c++) {
-							if (piece.isValidMove(r, c, board)) {
-								Piece backup = board[r][c];
-								board[r][c] = piece;
-								board[row][col] = null;
-								piece.setPosition(r, c);
-								boolean stillInCheck = isKingInCheck(whiteTurn);
-								board[row][col] = piece;
-								board[r][c] = backup;
-								piece.setPosition(row, col);
-								if (!stillInCheck)
-									return false;
-							}
-						}
-					}
-				}
-			}
-		}
-		return true;
+	public boolean isCheckmateFor(boolean isWhite) {
+	    // First verify the king is actually in check
+	    if (!isKingInCheck(isWhite)) {
+	        return false;
+	    }
+
+	    // Check all pieces of the color in question
+	    for (int row = 0; row < 8; row++) {
+	        for (int col = 0; col < 8; col++) {
+	            Piece piece = board[row][col];
+	            if (piece != null && piece.isWhite() == isWhite) {
+	                // Check all possible moves for this piece
+	                for (int r = 0; r < 8; r++) {
+	                    for (int c = 0; c < 8; c++) {
+	                        if (piece.isValidMove(r, c, board)) {
+	                            // Simulate the move
+	                            Piece captured = board[r][c];
+	                            board[r][c] = piece;
+	                            board[row][col] = null;
+	                            piece.setPosition(r, c);
+	                            
+	                            boolean stillInCheck = isKingInCheck(isWhite);
+	                            
+	                            // Undo the move
+	                            board[row][col] = piece;
+	                            board[r][c] = captured;
+	                            piece.setPosition(row, col);
+	                            
+	                            if (!stillInCheck) {
+	                                return false; // Found at least one legal move
+	                            }
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	    }
+	    return true; // No legal moves found
 	}
 
 	// Stalemate detection

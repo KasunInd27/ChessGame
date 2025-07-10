@@ -5,6 +5,7 @@ import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
 
+@SuppressWarnings("serial")
 public class GUI extends JFrame {
 	private Board board;
 	private JButton[][] squares;
@@ -47,17 +48,38 @@ public class GUI extends JFrame {
 		Piece piece = b[row][col];
 
 		if (selectedRow == -1) {
-			// select only if it's current player's piece
+			// First click - select piece
 			if (piece != null && piece.isWhite() == board.isWhiteTurn()) {
 				selectedRow = row;
 				selectedCol = col;
 				legalMoves = getLegalMoves(piece, row, col);
 			}
-
 		} else {
-			if (board.movePiece(selectedRow, selectedCol, row, col)) {
-				refreshBoard();
+			// Second click - attempt move
+			if (row == selectedRow && col == selectedCol) {
+				// Clicked same square - deselect
+				selectedRow = -1;
+				selectedCol = -1;
+				legalMoves.clear();
+			} else {
+				// Store current turn before move
+				boolean wasWhiteTurn = board.isWhiteTurn();
+
+				if (board.movePiece(selectedRow, selectedCol, row, col)) {
+					refreshBoard();
+
+					// Check the PREVIOUS player's status (the one who just moved)
+					boolean opponentCheckmate = board.isCheckmateFor(!wasWhiteTurn);
+
+					if (opponentCheckmate) {
+						String winner = wasWhiteTurn ? "White" : "Black";
+						JOptionPane.showMessageDialog(this, "Checkmate! " + winner + " wins the game!", "Game Over",
+								JOptionPane.INFORMATION_MESSAGE);
+					}
+
+				}
 			}
+			// Reset selection regardless of move success
 			selectedRow = -1;
 			selectedCol = -1;
 			legalMoves.clear();
@@ -67,28 +89,50 @@ public class GUI extends JFrame {
 
 	private void refreshBoard() {
 		Piece[][] b = board.getBoard();
+
+		// ✅ Detect which king is in check
+		Point checkedKing = board.isKingInCheck(board.isWhiteTurn()) ? findKingPosition(board.isWhiteTurn()) : null;
+
 		for (int row = 0; row < 8; row++) {
 			for (int col = 0; col < 8; col++) {
 				JButton btn = squares[row][col];
-				updateButtonIcon(squares[row][col], b[row][col]);
-				
-				//Reset background
+				updateButtonIcon(btn, b[row][col]);
+
+				//Default square color
 				btn.setBackground((row + col) % 2 == 0 ? Color.WHITE : Color.GRAY);
-				
+
 				//Highlight selected piece
 				if (row == selectedRow && col == selectedCol) {
 					btn.setBackground(Color.YELLOW);
 				}
-				
-				//Highlight legal moves
+
+				//Highlight legal move destinations
 				for (Point p : legalMoves) {
 					if (p.x == row && p.y == col) {
 						btn.setBackground(Color.GREEN);
 					}
 				}
+
+				//Highlight checked king
+				if (checkedKing != null && checkedKing.x == row && checkedKing.y == col) {
+					btn.setBackground(Color.RED);
+				}
 			}
 		}
 
+	}
+
+	private Point findKingPosition(boolean isWhite) {
+		Piece[][] b = board.getBoard();
+		for (int row = 0; row < 8; row++) {
+			for (int col = 0; col < 8; col++) {
+				Piece piece = b[row][col];
+				if (piece instanceof King && piece.isWhite() == isWhite) {
+					return new Point(row, col);
+				}
+			}
+		}
+		return null;
 	}
 
 	private void updateButtonIcon(JButton btn, Piece piece) {
@@ -98,36 +142,35 @@ public class GUI extends JFrame {
 	private List<Point> getLegalMoves(Piece piece, int row, int col) {
 		List<Point> moves = new ArrayList<>();
 		Piece[][] b = board.getBoard();
+
 		for (int r = 0; r < 8; r++) {
 			for (int c = 0; c < 8; c++) {
+				// Skip current position
+				if (r == row && c == col)
+					continue;
+
+				// Skip squares with own pieces (already handled in isValidMove)
 				if (piece.isValidMove(r, c, b)) {
-					// Check if move doesn't result in self-check
+					// Simulate move to check for self-check
 					Piece captured = b[r][c];
 					b[r][c] = piece;
 					b[row][col] = null;
 					piece.setPosition(r, c);
-					boolean legal = !boardIsKingInCheckSim(board, piece.isWhite());
+
+					boolean legal = !board.isKingInCheck(piece.isWhite());
+
+					// Undo simulation
 					b[row][col] = piece;
 					b[r][c] = captured;
 					piece.setPosition(row, col);
-					if (legal)
+
+					if (legal) {
 						moves.add(new Point(r, c));
+					}
 				}
 			}
 		}
 		return moves;
 	}
 
-	private boolean boardIsKingInCheckSim(Board board, boolean isWhite) {
-		try {
-			// This assumes isKingInCheck is accessible.
-			// If it's private, make it package-private or expose it via a method.
-			java.lang.reflect.Method m = Board.class.getDeclaredMethod("isKingInCheck", boolean.class);
-			m.setAccessible(true);
-			return (boolean) m.invoke(board, isWhite);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return true;
-		}
-	}
 }

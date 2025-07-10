@@ -9,16 +9,29 @@ public class King extends Piece {
 
 	@Override
 	public boolean isValidMove(int destRow, int destCol, Piece[][] board) {
-		int dr = Math.abs(destRow - row);
-		int dc = Math.abs(destCol - col);
-		
-		//Prevent capturing own pieces
-		if (board[destRow][destCol] != null && board[destRow][destCol].isWhite() != isWhite) {
-			return false;
-		}
-		// Normal king move or castling
-		return (dr <= 1 && dc <= 1) || (dr == 0 && dc == 2); 
-				
+	    int dr = Math.abs(destRow - row);
+	    int dc = Math.abs(destCol - col);
+	    
+	    // Prevent moving to squares occupied by own pieces
+	    if (board[destRow][destCol] != null && 
+	        board[destRow][destCol].isWhite() == this.isWhite()) {
+	        return false;
+	    }
+	    
+	    // Normal king move (1 square in any direction)
+	    if (dr <= 1 && dc <= 1) {
+	        return true;
+	    }
+	    
+	    // Castling (2 squares horizontally)
+	    if (dr == 0 && dc == 2 && !this.hasMoved()) {
+	        // Additional castling validation logic remains the same
+	        int rookCol = (destCol > col) ? 7 : 0;
+	        Piece rook = board[row][rookCol];
+	        return (rook instanceof Rook && !rook.hasMoved());
+	    }
+	    
+	    return false;
 	}
 
 	@Override
