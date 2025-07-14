@@ -3,17 +3,19 @@ package chess;
 import javax.swing.JOptionPane;
 
 public class Board {
-	private Piece[][] board;
-	private boolean whiteTurn;
+	private Piece[][] board;    // 2D array representing the 8x8 chess board
+	private boolean whiteTurn;  // true if it's white's turn, false if black's
 
+	// Constructor initializes the board and sets white to start
 	public Board() {
 		board = new Piece[8][8];
-		setup();
-		whiteTurn = true;
+		setup();                  // Place all pieces in starting positions
+		whiteTurn = true;         // White starts the game
 	}
 
+	// Places all chess pieces at their standard starting positions
 	private void setup() {
-		// Setup black pieces
+		// Setup black pieces on row 0 and pawns on row 1
 		board[0][0] = new Rook(0, 0, false);
 		board[0][1] = new Knight(0, 1, false);
 		board[0][2] = new Bishop(0, 2, false);
@@ -25,7 +27,7 @@ public class Board {
 		for (int i = 0; i < 8; i++)
 			board[1][i] = new Pawn(1, i, false);
 
-		// Setup white pieces
+		// Setup white pieces on row 7 and pawns on row 6
 		board[7][0] = new Rook(7, 0, true);
 		board[7][1] = new Knight(7, 1, true);
 		board[7][2] = new Bishop(7, 2, true);
@@ -38,19 +40,21 @@ public class Board {
 			board[6][i] = new Pawn(6, i, true);
 	}
 
+	// Returns the current state of the board
 	public Piece[][] getBoard() {
 		return board;
 	}
 
+	// Attempts to move a piece from one position to another
 	public boolean movePiece(int fromRow, int fromCol, int toRow, int toCol) {
 		Piece piece = board[fromRow][fromCol];
 		
-		//Cannot move empty square or wrong team's turn
+		// Invalid move: empty square, wrong turn, or invalid move rule
 		if (piece == null || piece.isWhite() != whiteTurn || !piece.isValidMove(toRow, toCol, board)) {
 			return false;
 		}
 		
-		//Block capturing your own piece (this is the critical fix)
+		// Prevent capturing your own piece
 	    if (board[toRow][toCol] != null && board[toRow][toCol].isWhite() == piece.isWhite()) {
 	        return false;
 	    }
@@ -61,6 +65,7 @@ public class Board {
 			int newRookCol = (toCol > fromCol) ? 5 : 3;
 			Piece rook = board[fromRow][rookCol];
 			
+			// Ensure castling conditions: rook is present and neither piece has moved
 			if (rook instanceof Rook && !rook.hasMoved() && !isKingInCheck(whiteTurn)) {
 				int dir = (toCol - fromCol) > 0 ? 1 : -1;
 				
@@ -80,7 +85,7 @@ public class Board {
 				rook.setPosition(fromRow, newRookCol);
 				piece.setMoved(true);
 				rook.setMoved(true);
-				whiteTurn = !whiteTurn;
+				whiteTurn = !whiteTurn;  // Switch turn
 				return true;
 			} else {
 				return false;
@@ -88,7 +93,7 @@ public class Board {
 		}
 
 		//Perform normal move
-		Piece captured = board[toRow][toCol];
+		Piece captured = board[toRow][toCol];    // Backup captured piece (if any)
 		board[toRow][toCol] = piece;
 		board[fromRow][fromCol] = null;
 		piece.setPosition(toRow, toCol);
@@ -107,6 +112,7 @@ public class Board {
 			String choice = (String) JOptionPane.showInputDialog(null, "Promote pawn to:", "Pawn Promotion",
 					JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
 
+			// Replace pawn with chosen piece
 			switch (choice) {
 			case "Rook":
 				board[toRow][toCol] = new Rook(toRow, toCol, piece.isWhite());
@@ -123,14 +129,16 @@ public class Board {
 			}
 		}
 
-		piece.setMoved(true);
-		whiteTurn = !whiteTurn;
+		piece.setMoved(true);    // Mark piece as moved (important for castling/pawns)
+		whiteTurn = !whiteTurn;  // Switch turn
 		return true;
 	}
 
 	// Check detection
 	public boolean isKingInCheck(boolean white) {
 		int kingRow = -1, kingCol = -1;
+		
+		// Find king's position
 		for (int row = 0; row < 8; row++) {
 			for (int col = 0; col < 8; col++) {
 				Piece piece = board[row][col];
@@ -141,6 +149,7 @@ public class Board {
 			}
 		}
 
+		// Check if any opponent piece can attack the king
 		for (int row = 0; row < 8; row++) {
 			for (int col = 0; col < 8; col++) {
 				Piece piece = board[row][col];
@@ -159,7 +168,7 @@ public class Board {
 	        return false;
 	    }
 
-	    // Check all pieces of the color in question
+	 // Try all legal moves for that player to see if any escape check
 	    for (int row = 0; row < 8; row++) {
 	        for (int col = 0; col < 8; col++) {
 	            Piece piece = board[row][col];
@@ -195,9 +204,11 @@ public class Board {
 
 	// Stalemate detection
 	public boolean isStalemate() {
+		// If the king is in check, it's not stalemate
 		if (isKingInCheck(whiteTurn))
 			return false;
 
+		// Check if current player has any legal moves
 		for (int row = 0; row < 8; row++) {
 			for (int col = 0; col < 8; col++) {
 				Piece piece = board[row][col];
@@ -221,9 +232,10 @@ public class Board {
 				}
 			}
 		}
-		return true;
+		return true;  // No legal moves and not in check = stalemate
 	}
 
+	// Returns whose turn it is
 	public boolean isWhiteTurn() {
 		return whiteTurn;
 	}
